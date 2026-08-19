@@ -268,8 +268,12 @@ function renderGrid() {
   $('viewTitle').textContent = S.query.trim()
     ? `Search: ${S.query.trim()}`
     : (cat ? cat.label : 'All packages');
-  $('viewCount').textContent =
-    `${total} of ${S.apps.length} packages · ${S.selected.size} selected`;
+  // While searching, "of 45" would be nonsense: most hits come from the
+  // repository, not the catalog. Report the two sources separately instead.
+  $('viewCount').textContent = S.query.trim()
+    ? `${local.length} in catalog · ${extra.length} in repository · ` +
+      `${S.selected.size} selected`
+    : `${total} of ${S.apps.length} packages · ${S.selected.size} selected`;
 
   grid.hidden = total === 0;
   $('empty').hidden = total > 0;
