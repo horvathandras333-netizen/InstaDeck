@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge Setup</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══ Title bar ══════════════════════════════════════════════════════ -->
+<header class="titlebar">
+  <div class="brand">
+    <span class="brand-chip"></span>
+    <span class="brand-name">Forge Setup</span>
+    <span class="brand-sub">&mdash; Batch Installer</span>
+  </div>
+
+  <div class="titlebar-meta">
+    <button class="theme-btn" id="themeToggle" title="Switch theme" aria-label="Switch theme">
+      <svg class="ic-sun" width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M19.8 4.2l-2.1 2.1M6.3 17.7l-2.1 2.1"/></svg>
+      <svg class="ic-moon" width="13" height="13" viewBox="0 0 24 24"><path d="M20 14.2A8.7 8.7 0 0 1 9.8 4a8.8 8.8 0 1 0 10.2 10.2Z"/></svg>
+    </button>
+    <div class="engine-pill" id="enginePill">
+      <span class="engine-dot" id="engineDot"></span>
+      <span id="engineText">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ Shell ══════════════════════════════════════════════════════════ -->
+<div class="shell">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="rail-label">Categories</div>
+    <nav id="catNav" aria-label="Categories"></nav>
+
+    <section class="rail-block">
+      <div class="rail-label">Bundles</div>
+      <div class="bundles" id="bundles"></div>
+      <button class="rail-action" id="saveBundle">+ Save selection</button>
+    </section>
+
+    <section class="rail-block">
+      <div class="rail-label">Target</div>
+      <div class="target" id="target">—</div>
+    </section>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ═══ Browse view ═══════════════════════════════════════════════ -->
+    <section class="view" id="viewBrowse">
+
+      <div class="filterbar">
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg>
+          <input id="search" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Search packages, publishers…">
+          <button class="link-btn" id="clearQuery" hidden>Clear</button>
+          <span class="spinner" id="searchSpin" hidden></span>
+        </div>
+
+        <button class="filter-toggle" id="officialOnly" aria-pressed="false">
+          <span class="tick"></span>
+          <span>Official source</span>
+        </button>
+        <button class="box-btn" id="hideInstalled" aria-pressed="false">Hide installed</button>
+        <button class="box-btn" id="selectAll">Select all</button>
+      </div>
+
+      <div class="viewhead">
+        <h1 id="viewTitle">All packages</h1>
+        <span class="viewcount" id="viewCount"></span>
+        <div class="spacer"></div>
+        <div class="legend" id="legend"></div>
+        <button class="link-btn strong" id="clearAll">Clear</button>
+      </div>
+
+      <div class="scroll" id="gridScroll">
+        <div class="gridwrap">
+          <div class="grid" id="grid"></div>
+          <div class="empty" id="empty" hidden>
+            <div class="empty-title" id="emptyTitle">No packages match</div>
+            <p class="empty-body">Try a publisher name, drop the source filter, or search across every category.</p>
+            <button class="cta-sm" id="resetFilters">Reset filters</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sharebar">
+        <span class="rail-label inline">Share bundle</span>
+        <input id="shareInput" class="share-input" spellcheck="false" autocomplete="off">
+        <button class="box-btn" id="copyShare">Copy</button>
+        <span class="share-meta" id="shareMeta">0 MB</span>
+      </div>
+    </section>
+
+    <!-- ═══ Install view ══════════════════════════════════════════════ -->
+    <section class="view" id="viewInstall" hidden>
+      <div class="runhead">
+        <div class="runhead-top">
+          <h1 id="runTitle">Installing</h1>
+          <span class="runsub" id="runSubtitle"></span>
+          <div class="spacer"></div>
+          <div class="runpct" id="runPct">0%</div>
+        </div>
+        <div class="runbar"><div class="runbar-fill" id="runFill"></div></div>
+      </div>
+
+      <div class="scroll" id="queueScroll">
+        <div id="queueList"></div>
+      </div>
+
+      <div class="runfoot">
+        <span class="runlog" id="runLog">Idle</span>
+        <div class="rule"></div>
+        <button class="link-btn" id="toggleConsole">Console</button>
+        <button class="link-btn strong" id="backToBrowse">Back to catalog</button>
+      </div>
+
+      <div class="console" id="console" hidden></div>
+    </section>
+
+    <!-- ═══ Floating CTA ══════════════════════════════════════════════ -->
+    <div class="cta-dock">
+      <span class="cta-meta" id="ctaMeta">Nothing selected</span>
+      <button class="cta" id="primary" disabled>
+        <span id="ctaLabel">Install Selected (0)</span>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
