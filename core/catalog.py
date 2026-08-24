@@ -30,6 +30,57 @@ LEGEND = [
 
 CATEGORY_HUE = {c["id"]: c["hue"] for c in CATEGORIES}
 
+# Local icon assets keep the catalog usable offline and inside the frozen build.
+# Entries discovered through winget search deliberately have no icon until they
+# are added to this curated catalog, at which point the UI uses its monogram.
+ICONS = {
+    "Google.Chrome": "icons/google-chrome.svg",
+    "Brave.Brave": "icons/brave.svg",
+    "Mozilla.Firefox": "icons/firefox.svg",
+    "Microsoft.Edge": "icons/microsoft-edge.svg",
+    "Vivaldi.Vivaldi": "icons/vivaldi.svg",
+    "Opera.Opera": "icons/opera.svg",
+    "Valve.Steam": "icons/steam.svg",
+    "EpicGames.EpicGamesLauncher": "icons/epic-games.svg",
+    "Discord.Discord": "icons/discord.svg",
+    "Blizzard.BattleNet": "icons/battle-net.svg",
+    "ElectronicArts.EADesktop": "icons/ea.svg",
+    "Ubisoft.Connect": "icons/ubisoft.svg",
+    "GOG.Galaxy": "icons/gog-galaxy.svg",
+    "Guru3D.Afterburner": "icons/msi-afterburner.svg",
+    "VideoLAN.VLC": "icons/vlc.svg",
+    "OBSProject.OBSStudio": "icons/obs-studio.svg",
+    "Spotify.Spotify": "icons/spotify.svg",
+    "HandBrake.HandBrake": "icons/handbrake.png",
+    "Audacity.Audacity": "icons/audacity.svg",
+    "GIMP.GIMP.3": "icons/gimp.svg",
+    "Gyan.FFmpeg": "icons/ffmpeg.svg",
+    "qBittorrent.qBittorrent": "icons/qbittorrent.svg",
+    "7zip.7zip": "icons/7-zip.svg",
+    "Microsoft.PowerToys": "icons/powertoys.svg",
+    "Rufus.Rufus": "icons/rufus.ico",
+    "voidtools.Everything": "icons/everything.ico",
+    "Notepad++.Notepad++": "icons/notepad-plus-plus.png",
+    "ShareX.ShareX": "icons/sharex.svg",
+    "AntibodySoftware.WizTree": "icons/wiztree.ico",
+    "RARLab.WinRAR": "icons/winrar.ico",
+    "Microsoft.VisualStudioCode": "icons/visual-studio-code.svg",
+    "Git.Git": "icons/git.svg",
+    "Docker.DockerDesktop": "icons/docker.svg",
+    "OpenJS.NodeJS.LTS": "icons/nodejs.svg",
+    "Python.Python.3.13": "icons/python.svg",
+    "GitHub.cli": "icons/github-cli.svg",
+    "Postman.Postman": "icons/postman.svg",
+    "Microsoft.WindowsTerminal": "icons/windows-terminal.svg",
+    "WinSCP.WinSCP": "icons/winscp.ico",
+    "Bitwarden.Bitwarden": "icons/bitwarden.svg",
+    "KeePassXCTeam.KeePassXC": "icons/keepassxc.svg",
+    "Malwarebytes.Malwarebytes": "icons/malwarebytes.svg",
+    "IDRIX.VeraCrypt": "icons/veracrypt.ico",
+    "Proton.ProtonVPN": "icons/proton-vpn.svg",
+    "Cloudflare.Warp": "icons/cloudflare-warp.svg",
+}
+
 
 def _app(pkg_id, name, publisher, category, desc, size, color, mark=None):
     return {
@@ -41,6 +92,7 @@ def _app(pkg_id, name, publisher, category, desc, size, color, mark=None):
         "size": size,
         "color": color,
         "mark": mark or name[0].upper(),
+        "icon": ICONS.get(pkg_id),
         "hue": CATEGORY_HUE.get(category, HUE_ORANGE),
         # Every curated entry is pinned to the official winget community
         # repository; search results carry whatever source winget reports.

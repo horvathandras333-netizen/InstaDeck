@@ -18,6 +18,8 @@ const S = {
   query: '',
   officialOnly: false,
   hideInstalled: false,
+  upgradeOnly: false,
+  history: [],
   running: false,
   paused: false,
   log: 'Idle',
@@ -133,6 +135,10 @@ function find(id) {
 }
 
 function isInstalled(id) { return S.installed.has(id.toLowerCase()); }
+function isUpgradeable(id) {
+  const rec = S.installed.get(id.toLowerCase());
+  return !!(rec && rec.available && rec.available !== '-');
+}
 function isOfficial(app) { return OFFICIAL.has((app.source || '').toLowerCase()); }
 
 function versionOf(app) {
@@ -140,11 +146,31 @@ function versionOf(app) {
   return (rec && rec.version) || app.version || '';
 }
 
+function appTile(cls, app) {
+  const tile = el('div', cls);
+  if (!app.icon) {
+    tile.textContent = app.mark || '?';
+    return tile;
+  }
+  const icon = document.createElement('img');
+  icon.className = 'app-icon';
+  icon.src = app.icon;
+  icon.alt = `${app.name} icon`;
+  icon.onerror = () => {
+    icon.remove();
+    tile.textContent = app.mark || '?';
+    tile.classList.add('icon-fallback');
+  };
+  tile.append(icon);
+  return tile;
+}
+
 function visible() {
   const q = S.query.trim().toLowerCase();
   const match = (a) => {
     if (S.officialOnly && !isOfficial(a)) return false;
     if (S.hideInstalled && isInstalled(a.id)) return false;
+    if (S.upgradeOnly && !isUpgradeable(a.id)) return false;
     if (q) {
       return (`${a.name} ${a.id} ${a.publisher} ${a.desc}`).toLowerCase().includes(q);
     }
@@ -245,9 +271,12 @@ function renderBundles() {
 function render() {
   $('viewBrowse').hidden = S.view !== 'browse';
   $('viewInstall').hidden = S.view !== 'install';
+  $('viewHistory').hidden = S.view !== 'history';
+  $('ctaDock').hidden = S.view === 'history';
 
   if (S.view === 'browse') renderGrid();
-  else renderQueue();
+  else if (S.view === 'install') renderQueue();
+  else renderHistory();
 
   renderBundles();
   syncShare();
@@ -297,7 +326,7 @@ function card(app) {
   /* top row: tile, name/version, checkbox */
   const top = el('div', 'card-top');
 
-  const tile = el('div', 'tile', app.mark || '?');
+  const tile = appTile('tile', app);
   tile.style.outlineColor = on ? hue : 'var(--box-line)';
   tile.style.color = on ? hue : 'var(--t2)';
 
@@ -312,6 +341,7 @@ function card(app) {
   }
   if (app.size) meta.append(el('span', 'size', fmtSize(app.size)));
   if (installed) meta.append(el('span', 'ver installed', 'Installed'));
+  if (isUpgradeable(app.id)) meta.append(el('span', 'ver update', `Update v${S.installed.get(key).available}`));
   idBox.append(meta);
 
   const box = el('div', 'box');
@@ -387,7 +417,7 @@ function queueRow(item, i) {
 
   const row = el('div', 'qrow' + (state === 'queued' ? '' : ' active'));
 
-  const tile = el('div', 'qtile', app.mark || '?');
+  const tile = appTile('qtile', app);
   tile.style.outlineColor = state === 'failed' ? 'var(--err)'
     : state === 'installed' ? 'var(--hue-green)' : (app.hue || 'var(--accent)');
   row.append(tile);
@@ -476,7 +506,7 @@ function runPct() {
 /* ══ Selection ══════════════════════════════════════════════════════ */
 function toggle(app) {
   if (S.view === 'install') return;
-  if (isInstalled(app.id)) {
+  if (isInstalled(app.id) && !(S.upgradeOnly && isUpgradeable(app.id))) {
     toast(`${app.name} is already installed.`);
     return;
   }
@@ -519,7 +549,7 @@ function syncCta() {
     $('ctaMeta').textContent = n
       ? names.join(' · ') + (n > 3 ? ` +${n - 3}` : '')
       : 'Nothing selected';
-    $('ctaLabel').textContent = `Install Selected (${n})`;
+    $('ctaLabel').textContent = `${S.upgradeOnly ? 'Update' : 'Install'} Selected (${n})`;
     btn.disabled = n === 0;
   }
 }
@@ -528,6 +558,20 @@ function syncCta() {
 async function startRun() {
   const ids = [...S.selected];
   if (!ids.length) return;
+  const operation = S.upgradeOnly ? 'upgrade' : 'install';
+  const completion = { kind: $('completionAction').value };
+  if (completion.kind === 'script') {
+    completion.script = $('completionScript').value.trim();
+    if (!completion.script) return toast('Enter a PowerShell command first.', 'err');
+    if (!confirm('Run this PowerShell command after the queue finishes?')) return;
+  }
+  try {
+    const check = await api('preflight', ids,
+      ids.reduce((sum, id) => sum + (find(id).size || 0), 0), operation);
+    if (check.warnings?.length && !confirm(`Preflight checks:\n\n${check.warnings.join('\n')}\n\nContinue?`)) return;
+  } catch (err) {
+    return toast(`Preflight failed: ${err.message}`, 'err');
+  }
 
   S.view = 'install';
   S.running = true;
@@ -538,13 +582,42 @@ async function startRun() {
   render();
 
   try {
-    const res = await api('install', ids);
+    const res = await api(operation, ids, completion);
     if (!res.ok) { toast(res.error, 'err'); S.running = false; render(); }
   } catch (err) {
     toast(`Could not start the run: ${err.message}`, 'err');
     S.running = false;
     render();
   }
+}
+
+function renderHistory() {
+  const list = $('historyList');
+  list.replaceChildren();
+  $('historyCount').textContent = `${S.history.length} saved run${S.history.length === 1 ? '' : 's'}`;
+  if (!S.history.length) {
+    list.append(el('div', 'history-empty', 'No completed runs yet. Your completed installs and upgrades will appear here.'));
+    return;
+  }
+  S.history.forEach((entry) => {
+    const row = el('div', 'history-row');
+    const top = el('div', 'history-top');
+    const date = entry.at ? new Date(entry.at).toLocaleString() : 'Unknown time';
+    top.append(el('strong', '', entry.operation === 'upgrade' ? 'Update run' : 'Install run'),
+      el('span', 'history-date', date));
+    const summary = entry.summary || {};
+    row.append(top, el('div', 'history-summary',
+      `${summary.installed || 0} completed · ${summary.failed || 0} failed · ${summary.skipped || 0} skipped`),
+      el('div', 'history-items', (entry.items || []).map((item) => `${find(item.id).name} — ${item.state}`).join(' · ')));
+    list.append(row);
+  });
+}
+
+async function openHistory() {
+  S.view = 'history';
+  render();
+  try { S.history = await api('history'); renderHistory(); }
+  catch (err) { toast(`Could not read history: ${err.message}`, 'err'); }
 }
 
 function backToBrowse() {
@@ -688,9 +761,17 @@ function wireUI() {
     e.currentTarget.setAttribute('aria-pressed', String(S.hideInstalled));
     render();
   };
+  $('upgradeOnly').onclick = (e) => {
+    S.upgradeOnly = !S.upgradeOnly;
+    if (S.upgradeOnly) S.hideInstalled = false;
+    e.currentTarget.setAttribute('aria-pressed', String(S.upgradeOnly));
+    $('hideInstalled').setAttribute('aria-pressed', String(S.hideInstalled));
+    S.selected.clear();
+    render();
+  };
   $('selectAll').onclick = () => {
     [...visible(), ...extraResults()].forEach((a) => {
-      if (!isInstalled(a.id)) S.selected.add(a.id);
+      if (!isInstalled(a.id) || (S.upgradeOnly && isUpgradeable(a.id))) S.selected.add(a.id);
     });
     S.copied = false;
     render();
@@ -698,10 +779,12 @@ function wireUI() {
   $('clearAll').onclick = () => { S.selected.clear(); S.copied = false; render(); };
   $('resetFilters').onclick = () => {
     S.query = ''; S.officialOnly = false; S.hideInstalled = false; S.category = 'all';
+    S.upgradeOnly = false;
     $('search').value = '';
     $('clearQuery').hidden = true;
     $('officialOnly').setAttribute('aria-pressed', 'false');
     $('hideInstalled').setAttribute('aria-pressed', 'false');
+    $('upgradeOnly').setAttribute('aria-pressed', 'false');
     renderNav();
     render();
   };
@@ -717,6 +800,24 @@ function wireUI() {
     toast(`Saved “${label}” — ${ids.length} packages.`, 'ok');
     render();
   };
+
+  $('exportProfile').onclick = async () => {
+    if (!S.selected.size) return toast('Select some packages first.', 'err');
+    const res = await api('export_profile', 'Forge profile', [...S.selected]);
+    if (res.ok) toast(`Exported ${res.count} apps.`, 'ok');
+    else if (!res.cancelled) toast(res.error || 'Profile export failed.', 'err');
+  };
+  $('importProfile').onclick = async () => {
+    const res = await api('import_profile');
+    if (!res.ok) { if (!res.cancelled) toast(res.error || 'Profile import failed.', 'err'); return; }
+    S.selected = new Set(res.apps.filter((id) => !isInstalled(id)));
+    S.copied = false;
+    toast(`${res.name} — ${S.selected.size} selected.`, 'ok');
+    render();
+  };
+  $('showHistory').onclick = openHistory;
+  $('closeHistory').onclick = () => { S.view = 'browse'; render(); };
+  $('completionAction').onchange = (e) => { $('completionScript').hidden = e.target.value !== 'script'; };
 
   $('shareInput').addEventListener('input', (e) => {
     const raw = e.target.value.replace(/^forge:\/\//i, '').trim();

@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import threading
+from datetime import datetime, timezone
 
 if sys.platform != "win32":
     sys.exit("Forge Setup targets Windows: winget is a Windows-only tool.")
@@ -76,8 +77,59 @@ class Api:
     def search(self, query):
         return self._engine.search(query)
 
-    def install(self, ids):
-        return self._engine.start_queue(list(ids or []))
+    def install(self, ids, completion=None):
+        return self._engine.start_queue(list(ids or []), "install", completion)
+
+    def upgrade(self, ids, completion=None):
+        return self._engine.start_queue(list(ids or []), "upgrade", completion)
+
+    def preflight(self, ids, estimated_mb=0, operation="install"):
+        return self._engine.preflight(list(ids or []), estimated_mb, operation)
+
+    def history(self):
+        return self._engine.history()
+
+    def export_profile(self, name, ids):
+        if not self._window:
+            return {"ok": False, "error": "Window is not ready."}
+        safe_name = "".join(c for c in str(name or "Forge profile") if c.isalnum() or c in " -_").strip() or "Forge profile"
+        path = self._window.create_file_dialog(
+            webview.SAVE_DIALOG,
+            save_filename=f"{safe_name}.forge.json",
+            file_types=("Forge profiles (*.forge.json)", "JSON files (*.json)"),
+        )
+        if not path:
+            return {"ok": False, "cancelled": True}
+        payload = {"format": "forge-profile/v1", "name": safe_name,
+                   "created_at": datetime.now(timezone.utc).isoformat(),
+                   "apps": [str(item) for item in (ids or []) if item]}
+        try:
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2)
+            return {"ok": True, "path": path, "count": len(payload["apps"])}
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def import_profile(self):
+        if not self._window:
+            return {"ok": False, "error": "Window is not ready."}
+        paths = self._window.create_file_dialog(
+            webview.OPEN_DIALOG,
+            allow_multiple=False,
+            file_types=("Forge profiles (*.forge.json;*.json)",),
+        )
+        if not paths:
+            return {"ok": False, "cancelled": True}
+        path = paths[0] if isinstance(paths, (list, tuple)) else paths
+        try:
+            with open(path, encoding="utf-8") as handle:
+                payload = json.load(handle)
+            apps = payload.get("apps", [])
+            if not isinstance(apps, list) or not all(isinstance(app, str) for app in apps):
+                raise ValueError("This is not a valid Forge profile.")
+            return {"ok": True, "name": payload.get("name") or "Imported profile", "apps": apps}
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            return {"ok": False, "error": str(exc)}
 
     def cancel(self):
         return self._engine.cancel()

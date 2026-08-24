@@ -41,11 +41,18 @@ are parsed from live installer output.
   machine, with its version, and takes it out of the selection.
 - **Bundles** — five built in (Fresh laptop, Gaming rig, Streaming rig, Dev box,
   Hardened), plus *Save selection* to store your own.
+- **Portable profiles** — export a selection as a `.forge.json` file and import
+  it on another machine.
 - **Share strings** — a selection encodes to `forge://Pkg.One+Pkg.Two`. Paste one
   back in to restore it on another machine.
+- **Upgrade mode and preflight** — surface catalog updates, then check disk
+  space, installer conflicts, and elevation before a run begins.
 - **Live install queue** — per-package progress, reorder what has not started,
   cancel, abort, retry a failure, requeue a skip.
-- **Dark and light themes**, and a **single portable `.exe`** with no installer.
+- **History and completion actions** — completed runs persist locally; optionally
+  launch installed apps, open package pages, or run an explicitly entered
+  PowerShell command afterward.
+- **Dark and light themes**, a **portable `.exe`**, and a Windows setup wizard.
 
 ---
 

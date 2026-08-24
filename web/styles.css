@@ -402,6 +402,13 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
   font-size: 15px; font-weight: 800; letter-spacing: -.02em;
   color: var(--t2);
 }
+.app-icon {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.icon-fallback { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
 
 .card-id { flex: 1; min-width: 0; }
 .card-name {
@@ -518,6 +525,21 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
   font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
   color: var(--t7); flex: none; font-variant-numeric: tabular-nums;
 }
+.completion-select, .completion-script {
+  height: 36px; background: var(--field); border: 2px solid var(--field-line);
+  color: var(--t3); font-size: 11px; padding: 0 9px; outline: none;
+}
+.completion-select { max-width: 170px; }
+.completion-script { width: 250px; font-family: var(--mono); }
+.completion-select:focus, .completion-script:focus { border-color: var(--accent); }
+
+/* ── History ───────────────────────────────────────────────────────── */
+.history-list { padding: 0 28px 92px; }
+.history-row { padding: 18px 0; border-bottom: 1px solid var(--line-soft); }
+.history-top { display: flex; align-items: baseline; gap: 12px; color: var(--t1); }
+.history-date, .history-summary, .history-items { font-size: 12px; color: var(--t5); margin-top: 7px; }
+.history-items { color: var(--t4); line-height: 1.5; }
+.history-empty { padding: 60px 0; color: var(--t5); font-size: 13px; }
 
 /* ══ Install view ═══════════════════════════════════════════════════ */
 .runhead { flex: none; padding: 22px 28px 18px; border-bottom: 2px solid var(--line); }
@@ -555,6 +577,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
   font-size: 12px; font-weight: 800;
   color: var(--t2);
 }
+.qtile .app-icon { width: 29px; height: 29px; }
+.qtile.icon-fallback { font-size: 12px; }
 .qid { width: 210px; flex: none; min-width: 0; }
 .qname {
   font-size: 14.5px; font-weight: 800; color: var(--t1);

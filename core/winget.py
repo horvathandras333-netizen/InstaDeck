@@ -9,11 +9,17 @@ entries while an install is in flight.
 """
 
 import ctypes
+import datetime as dt
 import os
 import re
+import shutil
 import subprocess
 import threading
 import time
+import webbrowser
+from pathlib import Path
+
+from core import catalog, history
 
 CREATE_NO_WINDOW = 0x08000000
 
@@ -164,6 +170,8 @@ class WingetEngine:
         self._lock = threading.Lock()
         self._worker = None
         self._queue = []          # [{"id":…, "state":…}], mutable from the UI
+        self._operation = "install"
+        self._completion = {"kind": "none"}
 
     # -- events ----------------------------------------------------------
     def _log(self, line, stream="out"):
@@ -269,7 +277,34 @@ class WingetEngine:
         with self._lock:
             return [dict(item) for item in self._queue]
 
-    def start_queue(self, pkg_ids):
+    def preflight(self, pkg_ids, estimated_mb=0, operation="install"):
+        """Return actionable checks before a queue changes the machine."""
+        warnings = []
+        free_mb = 0
+        try:
+            free_mb = shutil.disk_usage(os.environ.get("SystemDrive", "C:") + "\\").free // 1024 ** 2
+            if estimated_mb and free_mb < estimated_mb * 2:
+                warnings.append("Low disk space for this selection.")
+        except OSError:
+            pass
+        try:
+            _, tasks = _run(["tasklist", "/FI", "IMAGENAME eq msiexec.exe"], timeout=10)
+            if "msiexec.exe" in tasks.lower():
+                warnings.append("Another Windows Installer process appears to be running.")
+        except Exception:
+            pass
+        if not is_elevated():
+            warnings.append("Some packages may request administrator approval.")
+        return {
+            "ok": True,
+            "operation": operation,
+            "packages": len([p for p in pkg_ids if p]),
+            "estimated_mb": int(estimated_mb or 0),
+            "free_mb": free_mb,
+            "warnings": warnings,
+        }
+
+    def start_queue(self, pkg_ids, operation="install", completion=None):
         """Seed the queue and start the worker. winget takes a global machine
         lock, so packages are installed strictly one at a time."""
         with self._lock:
@@ -278,8 +313,12 @@ class WingetEngine:
             pkg_ids = [p for p in dict.fromkeys(pkg_ids) if p]
             if not pkg_ids:
                 return {"ok": False, "error": "Nothing selected."}
+            if operation not in ("install", "upgrade"):
+                return {"ok": False, "error": "Unknown queue operation."}
             self._cancel.clear()
             self._pause.clear()
+            self._operation = operation
+            self._completion = completion if isinstance(completion, dict) else {"kind": "none"}
             self._queue = [{"id": p, "state": "queued"} for p in pkg_ids]
 
         for item in pkg_ids:
@@ -397,6 +436,14 @@ class WingetEngine:
         paused = (self._pause.is_set() or self._cancel.is_set()) \
             and summary["pending"] > 0
         self._emit({"type": "queue_done", "summary": summary, "paused": paused})
+        if not paused:
+            history.append({
+                "at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+                "operation": self._operation,
+                "summary": summary,
+                "items": snap,
+            })
+            self._complete(snap)
         self._log(
             f"Run {'paused' if paused else 'finished'} - "
             f"{summary['installed']} installed, {summary['failed']} failed, "
@@ -404,7 +451,7 @@ class WingetEngine:
 
     def _install_one(self, pkg_id):
         args = [
-            "winget", "install", "--id", pkg_id, "-e",
+            "winget", self._operation, "--id", pkg_id, "-e",
             "--silent",
             "--accept-package-agreements",
             "--accept-source-agreements",
@@ -478,6 +525,55 @@ class WingetEngine:
         self._status(pkg_id, "failed", None, detail)
         self._log(f"{pkg_id} failed: {detail}", "err")
         return "failed"
+
+    def history(self):
+        return history.read()
+
+    def _complete(self, snap):
+        """Run an explicitly selected completion action after a successful run."""
+        kind = self._completion.get("kind", "none")
+        installed = [i["id"] for i in snap if i["state"] == "installed"]
+        if kind == "pages" and installed:
+            for pkg_id in installed:
+                webbrowser.open(f"https://winget.run/pkg/{pkg_id}")
+            self._log(f"Opened {len(installed)} package page(s).", "sys")
+        elif kind == "launch" and installed:
+            launched = sum(1 for pkg_id in installed if self._launch_shortcut(pkg_id))
+            self._log(f"Launched {launched} of {len(installed)} installed app(s).", "sys")
+        elif kind == "script":
+            script = str(self._completion.get("script", "")).strip()
+            if script:
+                try:
+                    subprocess.Popen(
+                        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+                        creationflags=CREATE_NO_WINDOW,
+                    )
+                    self._log("Started the selected completion script.", "sys")
+                except Exception as exc:
+                    self._log(f"Could not start completion script: {exc}", "err")
+
+    def _launch_shortcut(self, pkg_id):
+        """Open the matching Start-menu shortcut when an installer creates one."""
+        app = catalog.by_id(pkg_id)
+        if not app:
+            return False
+        needle = re.sub(r"[^a-z0-9]", "", app["name"].lower())
+        roots = [
+            Path(os.environ.get("APPDATA", "")) / "Microsoft/Windows/Start Menu/Programs",
+            Path(os.environ.get("ProgramData", "")) / "Microsoft/Windows/Start Menu/Programs",
+        ]
+        for root in roots:
+            if not root.is_dir():
+                continue
+            try:
+                for shortcut in root.rglob("*.lnk"):
+                    label = re.sub(r"[^a-z0-9]", "", shortcut.stem.lower())
+                    if needle and (needle in label or label in needle):
+                        os.startfile(str(shortcut))
+                        return True
+            except OSError:
+                continue
+        return False
 
     def _consume(self, pkg_id, raw, phase):
         """Interpret one winget output fragment; returns updated parse state."""

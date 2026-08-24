@@ -41,6 +41,9 @@
       <div class="rail-label">Bundles</div>
       <div class="bundles" id="bundles"></div>
       <button class="rail-action" id="saveBundle">+ Save selection</button>
+      <button class="rail-action" id="exportProfile">↓ Export profile</button>
+      <button class="rail-action" id="importProfile">↑ Import profile</button>
+      <button class="rail-action" id="showHistory">History</button>
     </section>
 
     <section class="rail-block">
@@ -69,6 +72,7 @@
           <span>Official source</span>
         </button>
         <button class="box-btn" id="hideInstalled" aria-pressed="false">Hide installed</button>
+        <button class="box-btn" id="upgradeOnly" aria-pressed="false">Show upgrades</button>
         <button class="box-btn" id="selectAll">Select all</button>
       </div>
 
@@ -96,6 +100,14 @@
         <input id="shareInput" class="share-input" spellcheck="false" autocomplete="off">
         <button class="box-btn" id="copyShare">Copy</button>
         <span class="share-meta" id="shareMeta">0 MB</span>
+        <select class="completion-select" id="completionAction" aria-label="Completion action">
+          <option value="none">After run: nothing</option>
+          <option value="launch">Launch installed apps</option>
+          <option value="pages">Open package pages</option>
+          <option value="script">Run PowerShell script</option>
+        </select>
+        <input id="completionScript" class="completion-script" hidden
+               placeholder="PowerShell command to run after completion" spellcheck="false">
       </div>
     </section>
 
@@ -125,8 +137,19 @@
       <div class="console" id="console" hidden></div>
     </section>
 
+    <!-- ═══ History view ═════════════════════════════════════════════ -->
+    <section class="view" id="viewHistory" hidden>
+      <div class="viewhead">
+        <h1>Install history</h1>
+        <span class="viewcount" id="historyCount"></span>
+        <div class="spacer"></div>
+        <button class="link-btn strong" id="closeHistory">Back to catalog</button>
+      </div>
+      <div class="scroll"><div class="history-list" id="historyList"></div></div>
+    </section>
+
     <!-- ═══ Floating CTA ══════════════════════════════════════════════ -->
-    <div class="cta-dock">
+    <div class="cta-dock" id="ctaDock">
       <span class="cta-meta" id="ctaMeta">Nothing selected</span>
       <button class="cta" id="primary" disabled>
         <span id="ctaLabel">Install Selected (0)</span>
