@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Forge Setup — Modernist design system
+   InstaDeck — Modernist design system
    Zero radius, 2px structural borders, hairline grid seams, four-hue legend.
    Dark is the designed default; light is derived from the system's own
    :root tokens (--color-bg #f3f2f2 / --color-text #201e1d / accent #ec3013).
@@ -153,21 +153,22 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
   height: var(--titlebar-h);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 0 0 18px;
+  gap: 0;
+  padding: 0;
   background: var(--rail);
   border-bottom: 2px solid var(--line);
 }
-.brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-.brand-chip { width: 14px; height: 14px; background: var(--accent); flex: none; }
+.titlebar-drag { display: flex; align-items: center; flex: 1; align-self: stretch; min-width: 0; padding-left: 18px; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand-mark { width: 26px; height: 26px; flex: none; object-fit: contain; }
 .brand-name {
   font-size: 12px; font-weight: 800;
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--t1);
 }
-.brand-sub { font-size: 12px; color: var(--t6); letter-spacing: .04em; }
+.brand-sub { font-size: 10px; font-weight: 700; color: var(--t6); letter-spacing: .11em; text-transform: uppercase; }
 
-.titlebar-meta { display: flex; align-items: center; gap: 10px; padding-right: 18px; }
+.titlebar-meta { display: flex; align-items: center; gap: 10px; height: 100%; }
 
 .theme-btn {
   width: 30px; height: 30px;
@@ -195,6 +196,15 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
 .engine-pill.bad .engine-dot { background: var(--err); }
 .engine-pill.ok  { color: var(--t3); }
 .engine-pill.bad { color: var(--err); border-color: var(--err); }
+
+.window-controls { align-self: stretch; display: flex; margin-left: 2px; }
+.window-btn {
+  width: 44px; height: 100%; display: grid; place-items: center;
+  color: var(--t4); border-left: 1px solid var(--line);
+  transition: color var(--fast), background var(--fast);
+}
+.window-btn:hover { color: var(--t1); background: var(--card-hover); }
+.window-btn.close:hover { color: #fff; background: var(--close); }
 
 /* ══ Shell ══════════════════════════════════════════════════════════ */
 .shell {
@@ -271,7 +281,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
 /* ── Filter bar ────────────────────────────────────────────────────── */
 .filterbar {
   flex: none;
-  display: flex; align-items: center; gap: 14px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
   padding: 20px 28px;
   border-bottom: 2px solid var(--line);
 }
@@ -324,6 +334,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
 }
 .box-btn:hover { color: var(--t1); border-color: var(--box-line); }
 .box-btn[aria-pressed="true"] { color: var(--t1); border-color: var(--accent); }
+.box-btn.update-all { color: var(--accent); border-color: var(--accent); }
+.box-btn:disabled { cursor: not-allowed; color: var(--t6); border-color: var(--field-line); }
 
 .filter-toggle {
   height: 44px; padding: 0 16px;
@@ -416,7 +428,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square;
   color: var(--t1);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.card-meta { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 7px; min-width: 0; }
 .ver {
   font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
   padding: 3px 7px;

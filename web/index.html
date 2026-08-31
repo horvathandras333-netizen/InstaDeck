@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forge Setup</title>
+  <title>InstaDeck</title>
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,10 +11,12 @@
 
 <!-- ══ Title bar ══════════════════════════════════════════════════════ -->
 <header class="titlebar">
-  <div class="brand">
-    <span class="brand-chip"></span>
-    <span class="brand-name">Forge Setup</span>
-    <span class="brand-sub">&mdash; Batch Installer</span>
+  <div class="titlebar-drag pywebview-drag-region">
+    <div class="brand">
+      <img class="brand-mark" src="app-icon.png" alt="">
+      <span class="brand-name">InstaDeck</span>
+      <span class="brand-sub">Winget installer</span>
+    </div>
   </div>
 
   <div class="titlebar-meta">
@@ -25,6 +27,14 @@
     <div class="engine-pill" id="enginePill">
       <span class="engine-dot" id="engineDot"></span>
       <span id="engineText">Connecting…</span>
+    </div>
+    <div class="window-controls" aria-label="Window controls">
+      <button class="window-btn" id="windowMinimize" title="Minimise" aria-label="Minimise">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+      </button>
+      <button class="window-btn close" id="windowClose" title="Close InstaDeck" aria-label="Close InstaDeck">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
     </div>
   </div>
 </header>
@@ -73,6 +83,7 @@
         </button>
         <button class="box-btn" id="hideInstalled" aria-pressed="false">Hide installed</button>
         <button class="box-btn" id="upgradeOnly" aria-pressed="false">Show upgrades</button>
+        <button class="box-btn update-all" id="updateAll" disabled>Update all (0)</button>
         <button class="box-btn" id="selectAll">Select all</button>
       </div>
 

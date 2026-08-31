@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for the portable single-file build.
 
-Build with:  python -m PyInstaller ForgeSetup.spec --noconfirm
-Output:      dist/ForgeSetup.exe
+Build with:  python -m PyInstaller InstaDeck.spec --noconfirm
+Output:      dist/InstaDeck.exe
 
 pywebview ships its own PyInstaller hook (webview/__pyinstaller), which pulls in
 the WinForms/EdgeChromium backend and the runtime JS it injects; pythonnet's
@@ -17,7 +17,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('web', 'web'),          # index.html, styles.css, app.js, fonts/
+        ('web', 'web'),          # index.html, styles.css, app.js, fonts/, logo
     ],
     hiddenimports=[
         'webview.platforms.edgechromium',
@@ -50,7 +50,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='ForgeSetup',
+    name='InstaDeck',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

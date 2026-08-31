@@ -1,6 +1,6 @@
 <div align="center">
 
-# Forge Setup
+# InstaDeck
 
 **A visual batch installer for Windows, built on top of `winget`.**
 
@@ -17,7 +17,7 @@ and per-package retry.
 
 ---
 
-![Forge Setup — package catalog](docs/browse.png)
+![InstaDeck — package catalog](docs/browse.png)
 
 ## What it is
 
@@ -25,7 +25,7 @@ and per-package retry.
 tedious: one command per package, no overview, no idea what is already
 installed, no way to hand someone else your setup.
 
-Forge Setup puts a real interface on it. Select what you want, hit install once,
+InstaDeck puts a real interface on it. Select what you want, hit install once,
 and watch the queue work through it. Everything on screen comes from the actual
 `winget` CLI running in the background — the catalog is real package
 identifiers, the installed badges come from `winget list`, and the progress bars
@@ -41,9 +41,9 @@ are parsed from live installer output.
   machine, with its version, and takes it out of the selection.
 - **Bundles** — five built in (Fresh laptop, Gaming rig, Streaming rig, Dev box,
   Hardened), plus *Save selection* to store your own.
-- **Portable profiles** — export a selection as a `.forge.json` file and import
+- **Portable profiles** — export a selection as an `.instadeck.json` file and import
   it on another machine.
-- **Share strings** — a selection encodes to `forge://Pkg.One+Pkg.Two`. Paste one
+- **Share strings** — a selection encodes to `instadeck://Pkg.One+Pkg.Two`. Paste one
   back in to restore it on another machine.
 - **Upgrade mode and preflight** — surface catalog updates, then check disk
   space, installer conflicts, and elevation before a run begins.
@@ -63,7 +63,7 @@ running two at once would only make them deadlock. The queue is live: anything
 still `QUEUED` can be reordered or cancelled while the package above it is
 downloading.
 
-![Forge Setup — install queue](docs/install.png)
+![InstaDeck — install queue](docs/install.png)
 
 Each row carries its own state and progress. `DOWNLOADING` percentages come from
 winget's byte counter; `VERIFYING HASH` is winget checking the installer against
@@ -72,14 +72,14 @@ bare exit code.
 
 ## Repository search
 
-![Forge Setup — repository search](docs/search.png)
+![InstaDeck — repository search](docs/search.png)
 
 ## Light theme
 
 Dark is the designed default. The light theme is built from the same design
 system's light tokens rather than being inverted.
 
-![Forge Setup — light theme](docs/light.png)
+![InstaDeck — light theme](docs/light.png)
 
 ---
 
@@ -87,7 +87,7 @@ system's light tokens rather than being inverted.
 
 ### Portable executable
 
-Build it with `build.bat`, then run `dist\ForgeSetup.exe`. One self-contained
+Build it with `build.bat`, then run `dist\InstaDeck.exe`. One self-contained
 file, no installation, no Python needed — copy it to a USB stick or a fresh
 machine and double-click.
 
@@ -121,7 +121,7 @@ app.py             pywebview window + the JS <-> Python bridge (class Api)
 core/winget.py     all subprocess work: probe, list, search, install queue
 core/catalog.py    45 packages, 7 categories, 5 bundles, the hue legend
 web/               index.html · styles.css · app.js · fonts/archivo.woff2
-ForgeSetup.spec    PyInstaller recipe for the single-file build
+InstaDeck.spec     PyInstaller recipe for the single-file build
 ```
 
 A native window (Edge WebView2 via [pywebview](https://pywebview.flowrl.com/))

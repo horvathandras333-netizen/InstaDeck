@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Forge Setup — frontend controller
+   InstaDeck — frontend controller
    Talks to Python via window.pywebview.api.*, receives pushes on window.__push
    ========================================================================== */
 
@@ -72,7 +72,7 @@ window.addEventListener('pywebviewready', () => {
 /* ══ Boot ═══════════════════════════════════════════════════════════ */
 async function boot() {
   wireUI();
-  applyTheme(localStorage.getItem('forge-theme') || 'dark');
+  applyTheme(localStorage.getItem('instadeck-theme') || localStorage.getItem('forge-theme') || 'dark');
   S.presets = loadBundles();
 
   let data;
@@ -138,6 +138,11 @@ function isInstalled(id) { return S.installed.has(id.toLowerCase()); }
 function isUpgradeable(id) {
   const rec = S.installed.get(id.toLowerCase());
   return !!(rec && rec.available && rec.available !== '-');
+}
+function upgradeableIds() {
+  return [...S.installed.entries()]
+    .filter(([, rec]) => rec.available && rec.available !== '-')
+    .map(([id]) => id);
 }
 function isOfficial(app) { return OFFICIAL.has((app.source || '').toLowerCase()); }
 
@@ -279,8 +284,16 @@ function render() {
   else renderHistory();
 
   renderBundles();
+  syncUpdateAll();
   syncShare();
   syncCta();
+}
+
+function syncUpdateAll() {
+  const ids = upgradeableIds();
+  const button = $('updateAll');
+  button.textContent = `Update all (${ids.length})`;
+  button.disabled = !ids.length || S.running;
 }
 
 function renderGrid() {
@@ -340,8 +353,11 @@ function card(app) {
     meta.append(chip);
   }
   if (app.size) meta.append(el('span', 'size', fmtSize(app.size)));
-  if (installed) meta.append(el('span', 'ver installed', 'Installed'));
-  if (isUpgradeable(app.id)) meta.append(el('span', 'ver update', `Update v${S.installed.get(key).available}`));
+  if (isUpgradeable(app.id)) {
+    meta.append(el('span', 'ver update', `Update v${S.installed.get(key).available}`));
+  } else if (installed) {
+    meta.append(el('span', 'ver installed', 'Installed'));
+  }
   idBox.append(meta);
 
   const box = el('div', 'box');
@@ -522,7 +538,7 @@ function toggle(app) {
 function syncShare() {
   const key = [...S.selected].join('+');
   const input = $('shareInput');
-  if (document.activeElement !== input) input.value = `forge://${key || 'empty'}`;
+  if (document.activeElement !== input) input.value = `instadeck://${key || 'empty'}`;
 
   const mb = [...S.selected].reduce((t, id) => t + (find(id).size || 0), 0);
   const unsized = [...S.selected].filter((id) => !find(id).size).length;
@@ -555,10 +571,8 @@ function syncCta() {
 }
 
 /* ══ Install run ════════════════════════════════════════════════════ */
-async function startRun() {
-  const ids = [...S.selected];
+async function startRun(ids = [...S.selected], operation = S.upgradeOnly ? 'upgrade' : 'install') {
   if (!ids.length) return;
-  const operation = S.upgradeOnly ? 'upgrade' : 'install';
   const completion = { kind: $('completionAction').value };
   if (completion.kind === 'script') {
     completion.script = $('completionScript').value.trim();
@@ -732,18 +746,18 @@ function onSearch(value) {
 
 /* ══ Bundles (user-saved, persisted locally) ════════════════════════ */
 function loadBundles() {
-  try { return JSON.parse(localStorage.getItem('forge-bundles') || '[]'); }
+  try { return JSON.parse(localStorage.getItem('instadeck-bundles') || localStorage.getItem('forge-bundles') || '[]'); }
   catch { return []; }
 }
 function saveBundles(list) {
-  localStorage.setItem('forge-bundles', JSON.stringify(list));
+  localStorage.setItem('instadeck-bundles', JSON.stringify(list));
 }
 
 /* ══ Theme ══════════════════════════════════════════════════════════ */
 function applyTheme(theme) {
   S.theme = theme;
   document.documentElement.dataset.theme = theme;
-  localStorage.setItem('forge-theme', theme);
+  localStorage.setItem('instadeck-theme', theme);
 }
 
 /* ══ Wiring ═════════════════════════════════════════════════════════ */
@@ -768,6 +782,14 @@ function wireUI() {
     $('hideInstalled').setAttribute('aria-pressed', String(S.hideInstalled));
     S.selected.clear();
     render();
+  };
+  $('updateAll').onclick = () => {
+    const ids = upgradeableIds();
+    if (!ids.length) return toast('Everything is up to date.', 'ok');
+    if (!confirm(`Update all available apps?\n\nThis will update ${ids.length} app${ids.length === 1 ? '' : 's'} one at a time.`)) return;
+    S.selected = new Set(ids);
+    S.copied = false;
+    startRun(ids, 'upgrade');
   };
   $('selectAll').onclick = () => {
     [...visible(), ...extraResults()].forEach((a) => {
@@ -803,7 +825,7 @@ function wireUI() {
 
   $('exportProfile').onclick = async () => {
     if (!S.selected.size) return toast('Select some packages first.', 'err');
-    const res = await api('export_profile', 'Forge profile', [...S.selected]);
+    const res = await api('export_profile', 'InstaDeck profile', [...S.selected]);
     if (res.ok) toast(`Exported ${res.count} apps.`, 'ok');
     else if (!res.cancelled) toast(res.error || 'Profile export failed.', 'err');
   };
@@ -820,7 +842,7 @@ function wireUI() {
   $('completionAction').onchange = (e) => { $('completionScript').hidden = e.target.value !== 'script'; };
 
   $('shareInput').addEventListener('input', (e) => {
-    const raw = e.target.value.replace(/^forge:\/\//i, '').trim();
+    const raw = e.target.value.replace(/^(?:instadeck|forge):\/\//i, '').trim();
     if (raw === 'empty' || !raw) { S.selected.clear(); render(); return; }
     const ids = raw.split(/[+,\s]+/).filter(Boolean);
     // Accept any id winget might know; the catalog lookup only fixes casing.
@@ -838,7 +860,7 @@ function wireUI() {
   });
 
   $('copyShare').onclick = () => {
-    const text = `forge://${[...S.selected].join('+') || 'empty'}`;
+    const text = `instadeck://${[...S.selected].join('+') || 'empty'}`;
     navigator.clipboard.writeText(text).then(
       () => { S.copied = true; syncShare(); toast('Bundle string copied.', 'ok'); },
       () => toast('Clipboard unavailable.', 'err'));
@@ -854,6 +876,8 @@ function wireUI() {
   $('backToBrowse').onclick = backToBrowse;
   $('toggleConsole').onclick = () => openConsole();
   $('themeToggle').onclick = () => applyTheme(S.theme === 'dark' ? 'light' : 'dark');
+  $('windowMinimize').onclick = () => api('window_minimize');
+  $('windowClose').onclick = () => api('window_close');
 
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'f') { e.preventDefault(); $('search').focus(); $('search').select(); }

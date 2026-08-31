@@ -13,9 +13,9 @@ if not exist "%ISCC%" (
   exit /b 1
 )
 
-"%ISCC%" "%~dp0ForgeSetup.iss"
+"%ISCC%" "%~dp0InstaDeck.iss"
 if errorlevel 1 ( echo. & echo INSTALLER BUILD FAILED & exit /b 1 )
 
 echo.
-echo Done -^> installer\ForgeSetup-Setup.exe
+echo Done -^> installer\InstaDeck-Setup.exe
 endlocal

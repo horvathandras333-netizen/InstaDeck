@@ -1,5 +1,5 @@
 @echo off
-rem Runs Forge Setup from source. pywebview lives in the Python 3.10 install on
+rem Runs InstaDeck from source. pywebview lives in the Python 3.10 install on
 rem this machine, so prefer that interpreter over whatever "python" resolves to.
 setlocal
 set "PY=%LOCALAPPDATA%\Programs\Python\Python310\pythonw.exe"
